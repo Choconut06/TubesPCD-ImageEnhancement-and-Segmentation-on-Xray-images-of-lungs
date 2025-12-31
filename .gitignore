@@ -10,6 +10,9 @@ venv/
 # Flask
 instance/
 
+# Uploads
+static/uploads/
+
 # OS
 .DS_Store
 Thumbs.db

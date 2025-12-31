@@ -35,7 +35,6 @@
                 <div class="divider"></div>
                 <input
                   type="range"
-                  id="brightness"
                   class="form-range range-thumb"
                   min="0"
                   max="100"
@@ -157,15 +156,9 @@
             </div>
           </div>
           <div class="d-grid gap-2 mt-3">
-            <div class="d-grid">
-              <button
-                class="btn btn-ghost btn-secondary py-2"
-                type="button"
-                id="resetControls"
-              >
-                Reset Image
-              </button>
-            </div>
+            <form action="{{ url_for('main.index') }}" method="get" class="d-grid">
+              <button class="btn btn-ghost py-2" type="submit">Reset Image</button>
+            </form>
             <form
               action="{{ url_for('main.clear') }}"
               method="post"
@@ -175,17 +168,11 @@
                 type="hidden"
                 name="filename"
                 value="{{ image_filename or '' }}"
-              />
+                />
               <button
-                class="btn btn-ghost btn-secondary py-2"
+                class="btn btn-ghost py-2"
                 type="submit"
-                {%
-                if
-                not
-                has_image
-                %}disabled{%
-                endif
-                %}
+                {% if not has_image %}disabled{% endif %}
               >
                 Clear Image
               </button>
@@ -206,7 +193,7 @@
                 alt="Uploaded image"
                 class="uploaded-image img-fluid"
               />
-              <div class="text-light small mt-2">
+              <div class="text-muted small mt-2">
                 Drag &amp; drop another image or click below to replace
               </div>
             </div>
@@ -291,24 +278,6 @@
         const dropArea = document.getElementById("dropArea");
         const fileInput = document.getElementById("fileInput");
         const uploadForm = document.getElementById("uploadForm");
-        const resetButton = document.getElementById("resetControls");
-        const brightness = document.getElementById("brightness");
-        const toggleIds = ["gaussian", "median", "histogram", "clahe", "otsu"];
-        const toggles = toggleIds
-          .map((id) => document.getElementById(id))
-          .filter(Boolean);
-
-        const resetControls = () => {
-          if (brightness) brightness.value = 50;
-          toggles.forEach((toggle) => {
-            toggle.checked = false;
-          });
-        };
-
-        if (resetButton) {
-          resetButton.addEventListener("click", resetControls);
-        }
-
         if (!dropArea || !fileInput || !uploadForm) return;
 
         const preventDefaults = (event) => {

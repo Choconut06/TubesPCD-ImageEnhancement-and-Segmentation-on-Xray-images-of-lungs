@@ -8,7 +8,9 @@ def create_app():
     
     app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-    app.config['UPLOAD_FOLDER'] = 'static/uploads'
+    upload_dir = os.path.join(static_dir, 'uploads')
+    app.config['UPLOAD_FOLDER'] = upload_dir
+    app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'jpeg', 'png'}
 
     from .routes import main
     app.register_blueprint(main)

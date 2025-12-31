@@ -63,10 +63,31 @@ body {
   text-align: center;
   color: #2a2a2a;
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+  border: 2px dashed #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drop-area.active {
+  border-color: #3da5f4;
+  background: #eef6ff;
+  color: #111827;
+  box-shadow: 0 12px 30px rgba(61, 165, 244, 0.18);
 }
 
 .drop-area small {
   color: #4a5568;
+}
+
+.upload-form {
+  margin: 0;
+}
+
+.uploaded-image {
+  max-height: 60vh;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+  object-fit: contain;
 }
 
 .preview-panel {
@@ -82,6 +103,14 @@ body {
   padding: 6px 10px;
   color: #e2e8f0;
   letter-spacing: 0.02em;
+}
+
+.preview-image {
+  width: 100%;
+  height: calc(44vh - 32px);
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 6px;
 }
 
 .btn-ghost {
