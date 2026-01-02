@@ -261,6 +261,32 @@
                   </label>
                 </div>
               </div>
+
+              <div class="section-card mb-4">
+                <h6 class="mb-1">Image Masking</h6>
+                <div class="divider"></div>
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="masking"
+                    {%
+                    if
+                    not
+                    has_image
+                    %}disabled{%
+                    endif
+                    %}
+                  />
+                  <label class="form-check-label control-label" for="masking">
+                    Apply Mask
+                  </label>
+                </div>
+                <small class="text-light d-block mt-2 ps-2">
+                  Menerapkan mask dari hasil segmentation ke gambar
+                </small>
+              </div>
             </div>
           </div>
           <div class="d-grid gap-2 mt-3">

@@ -6,6 +6,7 @@ from services.image_processing import (
     contrast_enhancement,
     image_segmentation,
     render_histogram_image,
+    apply_image_masking,
 )
 from werkzeug.utils import secure_filename
 
@@ -269,6 +270,92 @@ def process_segmentation():
 
     base_name = os.path.splitext(filename)[0]
     out_name = f"seg_{method}_{base_name}.png"
+    out_path = os.path.join(output_dir, out_name)
+
+    ok = cv2.imwrite(out_path, out_img)
+    if not ok:
+        return jsonify({"error": "gagal menyimpan output"}), 500
+
+    return jsonify({
+        "out_url": url_for("static", filename=f"outputs/{out_name}")
+    })
+
+
+@main.route("/process/image-masking", methods=["POST"])
+def process_image_masking():
+    filename = secure_filename(request.form.get("filename", ""))
+    
+    if not filename:
+        return jsonify({"error": "invalid input"}), 400
+
+    upload_folder = current_app.config["UPLOAD_FOLDER"]
+    image_abs_path = os.path.join(upload_folder, filename)
+
+    # Ambil parameter untuk preprocessing (noise removal, contrast enhancement)
+    noise_method = (request.form.get("noise_method", "") or "").lower().strip()
+    contrast_method = (request.form.get("contrast_method", "") or "").lower().strip()
+    clip_limit_raw = request.form.get("clahe_clip_limit")
+    tile_grid_raw = request.form.get("clahe_tile_grid_size")
+    gaussian_ksize_raw = request.form.get("gaussian_ksize")
+    gaussian_sigma_raw = request.form.get("gaussian_sigma")
+    median_ksize_raw = request.form.get("median_ksize")
+    
+    # Parameter untuk segmentation (untuk membuat mask)
+    segmentation_method = (request.form.get("segmentation_method", "") or "").lower().strip()
+    if not segmentation_method:
+        segmentation_method = "otsu"  # default ke otsu
+
+    # Preprocessing: noise removal
+    pre_gray = None
+    if noise_method in ("gaussian", "median"):
+        noise_kwargs = {}
+        if gaussian_ksize_raw:
+            noise_kwargs["gaussian_ksize"] = int(gaussian_ksize_raw)
+        if gaussian_sigma_raw:
+            noise_kwargs["gaussian_sigma"] = float(gaussian_sigma_raw)
+        if median_ksize_raw:
+            noise_kwargs["median_ksize"] = int(median_ksize_raw)
+
+        pre_gray = noise_removal(
+            image_abs_path=image_abs_path,
+            method=noise_method,
+            **noise_kwargs,
+        )
+
+    # Preprocessing: contrast enhancement
+    if contrast_method in ("histogram", "clahe"):
+        kwargs = {}
+        if clip_limit_raw:
+            kwargs["clahe_clip_limit"] = float(clip_limit_raw)
+        if tile_grid_raw:
+            kwargs["clahe_tile_grid_size"] = int(tile_grid_raw)
+
+        pre_gray = contrast_enhancement(
+            image_abs_path=image_abs_path,
+            method=contrast_method,
+            pre_gray=pre_gray,
+            **kwargs,
+        )
+
+    # Buat mask dari segmentation
+    mask = image_segmentation(
+        image_abs_path=image_abs_path,
+        method=segmentation_method,
+        pre_gray=pre_gray,
+    )
+
+    # Terapkan masking
+    out_img = apply_image_masking(
+        image_abs_path=image_abs_path,
+        mask=mask,
+        pre_gray=pre_gray,
+    )
+
+    output_dir = os.path.join(current_app.static_folder, "outputs")
+    os.makedirs(output_dir, exist_ok=True)
+
+    base_name = os.path.splitext(filename)[0]
+    out_name = f"masked_{base_name}.png"
     out_path = os.path.join(output_dir, out_name)
 
     ok = cv2.imwrite(out_path, out_img)

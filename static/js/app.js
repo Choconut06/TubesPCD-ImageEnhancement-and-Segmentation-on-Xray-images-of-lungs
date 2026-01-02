@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let translateX = 0;
   let translateY = 0;
   const currentFilenameInput = document.getElementById("currentFilename");
-  const toggleIds = ["gaussian", "median", "histogram", "clahe", "otsu"];
+  const toggleIds = ["gaussian", "median", "histogram", "clahe", "otsu", "masking"];
   const toggles = toggleIds
     .map((id) => document.getElementById(id))
     .filter(Boolean);
@@ -233,6 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return "";
   };
 
+  const getActiveMaskingMethod = () => {
+    const masking = document.getElementById("masking");
+    if (masking?.checked) return "masking";
+    return "";
+  };
+
   const runNoiseRemoval = async (method, noiseParams = {}) => {
     const filename = currentFilenameInput?.value;
     if (!filename || !method) {
@@ -382,11 +388,70 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const runImageMasking = async (noiseMethod, contrastMethod, noiseParams = {}) => {
+    const filename = currentFilenameInput?.value;
+    if (!filename) {
+      resetProcessedImage();
+      updateProcessedHistogram(filename ? `${window.location.origin}/static/uploads/${filename}` : "");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("filename", filename);
+    formData.append("segmentation_method", "otsu"); // default menggunakan otsu untuk mask
+    if (noiseMethod) formData.append("noise_method", noiseMethod);
+    if (contrastMethod) formData.append("contrast_method", contrastMethod);
+    if (noiseMethod === "gaussian") {
+      if (Number.isFinite(noiseParams.gaussian_ksize)) {
+        formData.append("gaussian_ksize", String(noiseParams.gaussian_ksize));
+      }
+      if (Number.isFinite(noiseParams.gaussian_sigma)) {
+        formData.append("gaussian_sigma", String(noiseParams.gaussian_sigma));
+      }
+    }
+    if (noiseMethod === "median") {
+      if (Number.isFinite(noiseParams.median_ksize)) {
+        formData.append("median_ksize", String(noiseParams.median_ksize));
+      }
+    }
+    if (contrastMethod === "clahe") {
+      // CLAHE parameters bisa ditambahkan jika diperlukan
+    }
+
+    try {
+      const response = await fetch("/process/image-masking", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        resetProcessedImage();
+        return;
+      }
+      const data = await response.json();
+      if (data?.out_url) {
+        const url = data.out_url;
+        setProcessedImageSrc(`${url}?t=${Date.now()}`);
+        updateProcessedHistogram(url);
+      } else {
+        resetProcessedImage();
+      }
+    } catch (err) {
+      console.error("Image masking failed:", err);
+      resetProcessedImage();
+    }
+  };
+
   const processImage = () => {
     const contrastMethod = getActiveContrastMethod();
     const noiseMethod = getActiveNoiseMethod();
     const noiseParams = getNoiseParams();
     const segmentationMethod = getActiveSegmentationMethod();
+    const maskingMethod = getActiveMaskingMethod();
+
+    if (maskingMethod) {
+      runImageMasking(noiseMethod, contrastMethod, noiseParams);
+      return;
+    }
 
     if (segmentationMethod) {
       runSegmentation(segmentationMethod, noiseMethod, contrastMethod, noiseParams);
@@ -406,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resetProcessedImage();
   };
 
-  ["gaussian", "median", "histogram", "clahe", "otsu"].forEach((id) => {
+  ["gaussian", "median", "histogram", "clahe", "otsu", "masking"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("change", processImage);

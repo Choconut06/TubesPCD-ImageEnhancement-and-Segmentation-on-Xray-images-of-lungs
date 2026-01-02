@@ -214,3 +214,32 @@ def image_segmentation(
         return apply_otsu(gray_u8)
 
     raise ValueError('method harus "otsu"')
+
+
+def apply_image_masking(
+    image_abs_path: str,
+    mask: np.ndarray,
+    pre_gray: np.ndarray | None = None,
+) -> np.ndarray:
+    """
+    FUNGSI UTAMA IMAGE MASKING
+    Menerapkan mask ke gambar asli atau gambar yang sudah di-enhance.
+    - image_abs_path: path ke gambar asli
+    - mask: binary mask (0 atau 255) dari hasil segmentation
+    - pre_gray: gambar grayscale yang sudah di-process (optional)
+    output: gambar grayscale uint8 hasil masking
+    """
+    if pre_gray is None:
+        bgr = read_image(image_abs_path)
+        gray = to_grayscale(bgr)
+        gray_u8 = normalize_gray_uint8(gray)
+    else:
+        gray_u8 = normalize_gray_uint8(pre_gray)
+
+    # Normalize mask ke 0-1 untuk operasi masking
+    mask_normalized = (mask > 127).astype(np.float32)
+    
+    # Terapkan mask: kalikan gambar dengan mask
+    masked = (gray_u8.astype(np.float32) * mask_normalized).astype(np.uint8)
+    
+    return masked
