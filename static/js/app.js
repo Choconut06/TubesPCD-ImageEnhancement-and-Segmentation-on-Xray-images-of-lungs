@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomValue = document.getElementById("zoomValue");
   const zoomTargets = document.querySelectorAll(".zoom-target");
   const mainPanel = document.querySelector(".main-panel");
+  const otsuToggle = document.getElementById("otsu");
   let currentZoom = 1.0;
   let translateX = 0;
   let translateY = 0;
@@ -65,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateGaussianControlsState();
     updateMedianDisplay();
     updateMedianControlsState();
+    setSegmentationLock(false);
     currentZoom = 1.0;
     translateX = 0;
     translateY = 0;
@@ -126,6 +128,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+  const setSegmentationLock = (locked) => {
+    if (otsuToggle) {
+      otsuToggle.disabled = locked;
+      otsuToggle.classList.toggle("control-locked", locked);
+    }
+  };
 
   const applyZoom = () => {
     zoomTargets.forEach((el) => {
@@ -447,6 +456,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const noiseParams = getNoiseParams();
     const segmentationMethod = getActiveSegmentationMethod();
     const maskingMethod = getActiveMaskingMethod();
+
+    setSegmentationLock(Boolean(maskingMethod));
 
     if (maskingMethod) {
       runImageMasking(noiseMethod, contrastMethod, noiseParams);

@@ -19,6 +19,8 @@ body {
   border-radius: 10px;
   min-height: 92vh;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  max-height: 92vh;
+  overflow-y: auto;
 }
 
 .section-card {
@@ -174,6 +176,11 @@ body {
 .form-range:disabled::-moz-range-track,
 .range-disabled::-moz-range-track {
   background: #b9c3d7;
+}
+
+.control-locked {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .range-thumb::-webkit-slider-thumb {
