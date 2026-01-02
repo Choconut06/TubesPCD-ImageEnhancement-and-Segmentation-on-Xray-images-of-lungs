@@ -94,7 +94,7 @@ body {
   background: #162339;
   border-radius: 8px;
   border: 1px solid var(--border);
-  height: 44vh;
+  min-height: 220px;
   color: var(--muted);
 }
 
@@ -182,4 +182,11 @@ body {
   .main-panel {
     height: 65vh;
   }
+}
+
+/* Right sidebar scroll */
+.right-sidebar {
+  max-height: 90vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }

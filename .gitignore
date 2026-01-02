@@ -10,8 +10,9 @@ venv/
 # Flask
 instance/
 
-# Uploads
+# Uploads and Outputs
 static/uploads/
+static/outputs/
 
 # OS
 .DS_Store
