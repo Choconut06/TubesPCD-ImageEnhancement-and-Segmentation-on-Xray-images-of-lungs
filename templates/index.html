@@ -222,16 +222,13 @@
             class="d-flex flex-column align-items-center justify-content-center h-100 gap-3"
           >
             {% if has_image %}
-              <div class="text-center">
-                <img
-                  src="{{ image_path }}"
-                  alt="Uploaded image"
-                  class="uploaded-image img-fluid brightness-target"
-                />
-                <div class="text-light small mt-2">
-                  Drag &amp; drop another image or click below to replace
-                </div>
-              </div>
+            <div class="text-center">
+              <img
+                src="{{ image_path }}"
+                alt="Uploaded image"
+                class="uploaded-image img-fluid brightness-target"
+              />
+            </div>
             {% endif %}
 
             <form
@@ -248,6 +245,7 @@
                 accept=".jpg,.jpeg,.png"
                 class="visually-hidden"
               />
+              {% if not has_image %}
               <div class="drop-area" id="dropArea">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -275,6 +273,7 @@
                 <div class="small">Accepted formats: jpeg, png, jpg</div>
                 <small>Max size: 10 MB</small>
               </div>
+              {% endif %}
             </form>
             {% if error_message %}
             <div class="alert alert-warning py-2 px-3 mb-0 small">

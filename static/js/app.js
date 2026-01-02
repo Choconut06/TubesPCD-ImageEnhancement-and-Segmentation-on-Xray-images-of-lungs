@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateOtsuSliderState();
   }
 
-  if (!dropArea || !fileInput || !uploadForm) return;
+  if (!fileInput || !uploadForm) return;
 
   const preventDefaults = (event) => {
     event.preventDefault();
@@ -88,34 +88,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const highlight = () => dropArea.classList.add("active");
   const unhighlight = () => dropArea.classList.remove("active");
 
-  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-  });
+  if (dropArea) {
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      dropArea.addEventListener(eventName, preventDefaults, false);
+    });
 
-  ["dragenter", "dragover"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, highlight, false);
-  });
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropArea.addEventListener(eventName, highlight, false);
+    });
 
-  ["dragleave", "drop"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, unhighlight, false);
-  });
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropArea.addEventListener(eventName, unhighlight, false);
+    });
 
-  dropArea.addEventListener("click", () => fileInput.click());
+    dropArea.addEventListener("click", () => fileInput.click());
 
-  dropArea.addEventListener("drop", (event) => {
-    const droppedFiles = event.dataTransfer.files;
-    if (!droppedFiles || !droppedFiles.length) return;
+    dropArea.addEventListener("drop", (event) => {
+      const droppedFiles = event.dataTransfer.files;
+      if (!droppedFiles || !droppedFiles.length) return;
 
-    const file = droppedFiles[0];
-    const allowedTypes = ["image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
-      alert("Format harus jpg, jpeg, atau png.");
-      return;
-    }
+      const file = droppedFiles[0];
+      const allowedTypes = ["image/jpeg", "image/png"];
+      if (!allowedTypes.includes(file.type)) {
+        alert("Format harus jpg, jpeg, atau png.");
+        return;
+      }
 
-    fileInput.files = droppedFiles;
-    uploadForm.submit();
-  });
+      fileInput.files = droppedFiles;
+      uploadForm.submit();
+    });
+  }
 
   fileInput.addEventListener("change", () => {
     if (!fileInput.files || !fileInput.files.length) return;
