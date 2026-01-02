@@ -25,9 +25,7 @@
               <div
                 class="text-center text-dark bg-light rounded-3 fw-bold py-3 mb-3"
               >
-                Lung X-ray<br />
-                Review<br />
-                Control
+                Lung X-ray Review Control
               </div>
 
               <div class="section-card">
@@ -80,6 +78,62 @@
                     >Gaussian Filter</label
                   >
                 </div>
+                <div class="mb-3 ps-2">
+                  <div
+                    class="d-flex align-items-center justify-content-between"
+                  >
+                    <small class="text-light">Kernel size</small>
+                    <span
+                      id="gaussianKernelValue"
+                      class="badge text-bg-light text-dark"
+                      >5</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="gaussianKernel"
+                    class="form-range range-thumb"
+                    min="3"
+                    max="21"
+                    step="2"
+                    value="5"
+                    {%
+                    if
+                    not
+                    has_image
+                    %}disabled{%
+                    endif
+                    %}
+                  />
+                </div>
+                <div class="ps-2">
+                  <div
+                    class="d-flex align-items-center justify-content-between"
+                  >
+                    <small class="text-light">Sigma (σ)</small>
+                    <span
+                      id="gaussianSigmaValue"
+                      class="badge text-bg-light text-dark"
+                      >0.0</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="gaussianSigma"
+                    class="form-range range-thumb"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value="0.0"
+                    {%
+                    if
+                    not
+                    has_image
+                    %}disabled{%
+                    endif
+                    %}
+                  />
+                </div>
                 <div class="form-check form-switch">
                   <input
                     class="form-check-input"
@@ -97,6 +151,50 @@
                   <label class="form-check-label control-label" for="median"
                     >Median Filter</label
                   >
+                </div>
+                <div class="ps-2">
+                  <div
+                    class="d-flex align-items-center justify-content-between"
+                  >
+                    <small class="text-light">Kernel size</small>
+                    <span
+                      id="medianKernelValue"
+                      class="badge text-bg-light text-dark"
+                      >5</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="medianKernel"
+                    class="form-range range-thumb"
+                    min="3"
+                    max="21"
+                    step="2"
+                    value="5"
+                    {%
+                    if
+                    not
+                    has_image
+                    %}disabled{%
+                    endif
+                    %}
+                  />
+                </div>
+                <div class="d-grid mt-2">
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-secondary py-2"
+                    id="applyNoise"
+                    {%
+                    if
+                    not
+                    has_image
+                    %}disabled{%
+                    endif
+                    %}
+                  >
+                    Apply Noise Settings
+                  </button>
                 </div>
               </div>
 
@@ -213,7 +311,7 @@
               <img
                 src="{{ image_path }}"
                 alt="Uploaded image"
-                class="uploaded-image img-fluid brightness-target"
+                class="uploaded-image img-fluid brightness-target zoom-target"
               />
             </div>
             {% endif %}
@@ -269,40 +367,84 @@
             {% endif %}
           </div>
         </div>
+        {% if has_image %}
+        <div
+          class="zoom-controls-bar d-flex align-items-center justify-content-center gap-2 mt-2"
+        >
+          <button
+            type="button"
+            class="btn btn-ghost btn-secondary py-1 px-3"
+            id="zoomOut"
+          >
+            -
+          </button>
+          <span id="zoomValue" class="badge text-bg-light text-dark">100%</span>
+          <button
+            type="button"
+            class="btn btn-ghost btn-secondary py-1 px-3"
+            id="zoomIn"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-secondary py-1 px-3"
+            id="zoomReset"
+          >
+            Reset
+          </button>
+        </div>
+        {% endif %}
       </div>
 
       <div class="col-lg-3 d-none d-lg-block">
         <div class="right-sidebar">
-        <div class="preview-panel mb-2">
-          <div class="preview-title">Raw Image</div>
-          {% if has_image %}
-          <img
-            src="{{ image_path }}"
-            alt="Raw preview"
-            class="preview-image raw-preview img-fluid"
-          />
-          {% endif %}
-        </div>
-        <div class="preview-panel mb-2">
-          <div class="preview-title">Raw Image Histogram</div>
-          {% if has_image %}
-          <img
-            id="rawHistogram"
-            alt="Raw histogram"
-            class="preview-image histogram-image img-fluid"
-          />
-          {% endif %}
-        </div>
-        <div class="preview-panel">
-          <div class="preview-title">Processed Image Histogram</div>
-          {% if has_image %}
-          <img
-            id="processedHistogram"
-            alt="Processed histogram"
-            class="preview-image histogram-image img-fluid"
-          />
-          {% endif %}
-        </div>
+          <div class="preview-panel mb-2">
+            <div class="preview-title">Raw Image</div>
+            {% if has_image %}
+            <img
+              src="{{ image_path }}"
+              alt="Raw preview"
+              class="preview-image raw-preview img-fluid"
+            />
+            {% endif %}
+          </div>
+          <div class="preview-panel mb-2">
+            <div class="preview-title">Raw Image Histogram</div>
+            {% if has_image %}
+            <img
+              id="rawHistogram"
+              alt="Raw histogram"
+              class="preview-image histogram-image img-fluid"
+            />
+            {% endif %}
+          </div>
+          <div class="preview-panel">
+            <div class="preview-title">Processed Image Histogram</div>
+            {% if has_image %}
+            <img
+              id="processedHistogram"
+              alt="Processed histogram"
+              class="preview-image histogram-image img-fluid"
+            />
+            {% endif %}
+          </div>
+          <div class="d-grid mt-2">
+            <button
+              class="btn btn-ghost btn-secondary py-2"
+              type="button"
+              id="downloadProcessed"
+              {%
+              if
+              not
+              has_image
+              %}disabled{%
+              endif
+              %}
+            >
+              Download Processed Image
+            </button>
+          </div>
         </div>
       </div>
     </div>

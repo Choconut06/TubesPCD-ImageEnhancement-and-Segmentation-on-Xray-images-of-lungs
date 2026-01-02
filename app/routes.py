@@ -67,13 +67,26 @@ def upload():
 def clear():
     filename = secure_filename(request.form.get("filename", ""))
     upload_folder = current_app.config["UPLOAD_FOLDER"]
+    outputs_folder = os.path.join(current_app.static_folder, "outputs")
 
     if filename:
         target_path = os.path.join(upload_folder, filename)
-        # Only remove files inside the configured upload folder.
-        if os.path.commonpath([os.path.abspath(target_path), os.path.abspath(upload_folder)]) == os.path.abspath(upload_folder):
-            if os.path.exists(target_path):
-                os.remove(target_path)
+        if (
+            os.path.commonpath([os.path.abspath(target_path), os.path.abspath(upload_folder)])
+            == os.path.abspath(upload_folder)
+            and os.path.exists(target_path)
+        ):
+            os.remove(target_path)
+
+        base_name = os.path.splitext(filename)[0]
+        if os.path.exists(outputs_folder):
+            for fname in os.listdir(outputs_folder):
+                if not fname.endswith(".png"):
+                    continue
+                if fname.endswith(f"_{base_name}.png") or fname == f"hist_{base_name}.png":
+                    out_path = os.path.join(outputs_folder, fname)
+                    if os.path.commonpath([os.path.abspath(out_path), os.path.abspath(outputs_folder)]) == os.path.abspath(outputs_folder):
+                        os.remove(out_path)
 
     return render_template(
         "index.html",
@@ -147,6 +160,9 @@ def process_contrast_enhancement():
     clip_limit_raw = request.form.get("clahe_clip_limit")
     tile_grid_raw = request.form.get("clahe_tile_grid_size")
     noise_method = (request.form.get("noise_method", "") or "").lower().strip()
+    gaussian_ksize_raw = request.form.get("gaussian_ksize")
+    gaussian_sigma_raw = request.form.get("gaussian_sigma")
+    median_ksize_raw = request.form.get("median_ksize")
 
     kwargs = {}
     if clip_limit_raw:
@@ -156,9 +172,18 @@ def process_contrast_enhancement():
 
     pre_gray = None
     if noise_method in ("gaussian", "median"):
+        noise_kwargs = {}
+        if gaussian_ksize_raw:
+            noise_kwargs["gaussian_ksize"] = int(gaussian_ksize_raw)
+        if gaussian_sigma_raw:
+            noise_kwargs["gaussian_sigma"] = float(gaussian_sigma_raw)
+        if median_ksize_raw:
+            noise_kwargs["median_ksize"] = int(median_ksize_raw)
+
         pre_gray = noise_removal(
             image_abs_path=image_abs_path,
             method=noise_method,
+            **noise_kwargs,
         )
 
     out_img = contrast_enhancement(
@@ -199,12 +224,24 @@ def process_segmentation():
     contrast_method = (request.form.get("contrast_method", "") or "").lower().strip()
     clip_limit_raw = request.form.get("clahe_clip_limit")
     tile_grid_raw = request.form.get("clahe_tile_grid_size")
+    gaussian_ksize_raw = request.form.get("gaussian_ksize")
+    gaussian_sigma_raw = request.form.get("gaussian_sigma")
+    median_ksize_raw = request.form.get("median_ksize")
 
     pre_gray = None
     if noise_method in ("gaussian", "median"):
+        noise_kwargs = {}
+        if gaussian_ksize_raw:
+            noise_kwargs["gaussian_ksize"] = int(gaussian_ksize_raw)
+        if gaussian_sigma_raw:
+            noise_kwargs["gaussian_sigma"] = float(gaussian_sigma_raw)
+        if median_ksize_raw:
+            noise_kwargs["median_ksize"] = int(median_ksize_raw)
+
         pre_gray = noise_removal(
             image_abs_path=image_abs_path,
             method=noise_method,
+            **noise_kwargs,
         )
 
     if contrast_method in ("histogram", "clahe"):

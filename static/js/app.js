@@ -11,6 +11,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const rawPreview = document.querySelector(".raw-preview");
   const rawHistogramImg = document.getElementById("rawHistogram");
   const processedHistogramImg = document.getElementById("processedHistogram");
+  const gaussianKernel = document.getElementById("gaussianKernel");
+  const gaussianKernelValue = document.getElementById("gaussianKernelValue");
+  const gaussianSigma = document.getElementById("gaussianSigma");
+  const gaussianSigmaValue = document.getElementById("gaussianSigmaValue");
+  const medianKernel = document.getElementById("medianKernel");
+  const medianKernelValue = document.getElementById("medianKernelValue");
+  const applyNoiseBtn = document.getElementById("applyNoise");
+  const downloadProcessedBtn = document.getElementById("downloadProcessed");
+  const zoomInBtn = document.getElementById("zoomIn");
+  const zoomOutBtn = document.getElementById("zoomOut");
+  const zoomResetBtn = document.getElementById("zoomReset");
+  const zoomValue = document.getElementById("zoomValue");
+  const zoomTargets = document.querySelectorAll(".zoom-target");
+  const mainPanel = document.querySelector(".main-panel");
+  let currentZoom = 1.0;
+  let translateX = 0;
+  let translateY = 0;
   const currentFilenameInput = document.getElementById("currentFilename");
   const toggleIds = ["gaussian", "median", "histogram", "clahe", "otsu"];
   const toggles = toggleIds
@@ -37,10 +54,21 @@ document.addEventListener("DOMContentLoaded", () => {
       brightness.value = 50;
       applyBrightness(50);
     }
+    if (gaussianKernel) gaussianKernel.value = 5;
+    if (gaussianSigma) gaussianSigma.value = 0.0;
+    if (medianKernel) medianKernel.value = 5;
     toggles.forEach((toggle) => {
       toggle.checked = false;
     });
     resetProcessedImage();
+    updateGaussianDisplay();
+    updateGaussianControlsState();
+    updateMedianDisplay();
+    updateMedianControlsState();
+    currentZoom = 1.0;
+    translateX = 0;
+    translateY = 0;
+    applyZoom();
   };
 
   if (resetButton) {
@@ -62,6 +90,52 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   singleSelectGroups.forEach(setupSingleSelect);
+
+  const updateGaussianDisplay = () => {
+    if (gaussianKernelValue && gaussianKernel) {
+      gaussianKernelValue.textContent = String(gaussianKernel.value);
+    }
+    if (gaussianSigmaValue && gaussianSigma) {
+      gaussianSigmaValue.textContent = Number(gaussianSigma.value).toFixed(1);
+    }
+  };
+
+  const updateGaussianControlsState = () => {
+    const gaussianToggle = document.getElementById("gaussian");
+    const enabled = gaussianToggle?.checked;
+    [gaussianKernel, gaussianSigma].forEach((el) => {
+      if (!el) return;
+      el.disabled = !enabled;
+      el.classList.toggle("range-disabled", !enabled);
+    });
+  };
+
+  const updateMedianDisplay = () => {
+    if (medianKernelValue && medianKernel) {
+      medianKernelValue.textContent = String(medianKernel.value);
+    }
+  };
+
+  const updateMedianControlsState = () => {
+    const medianToggle = document.getElementById("median");
+    const enabled = medianToggle?.checked;
+    if (medianKernel) {
+      medianKernel.disabled = !enabled;
+      medianKernel.classList.toggle("range-disabled", !enabled);
+    }
+  };
+
+  const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+  const applyZoom = () => {
+    zoomTargets.forEach((el) => {
+      el.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`;
+      el.style.transformOrigin = "center center";
+    });
+    if (zoomValue) {
+      zoomValue.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+  };
 
   const originalImageSrc = rawPreview?.src || mainImage?.src || "";
 
@@ -131,6 +205,20 @@ document.addEventListener("DOMContentLoaded", () => {
     return "";
   };
 
+  const getNoiseParams = () => {
+    const params = {};
+    if (gaussianKernel) {
+      params.gaussian_ksize = parseInt(gaussianKernel.value, 10);
+    }
+    if (gaussianSigma) {
+      params.gaussian_sigma = parseFloat(gaussianSigma.value);
+    }
+    if (medianKernel) {
+      params.median_ksize = parseInt(medianKernel.value, 10);
+    }
+    return params;
+  };
+
   const getActiveContrastMethod = () => {
     const histogram = document.getElementById("histogram");
     const clahe = document.getElementById("clahe");
@@ -145,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return "";
   };
 
-  const runNoiseRemoval = async (method) => {
+  const runNoiseRemoval = async (method, noiseParams = {}) => {
     const filename = currentFilenameInput?.value;
     if (!filename || !method) {
       resetProcessedImage();
@@ -156,6 +244,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("filename", filename);
     formData.append("method", method);
+    if (method === "gaussian") {
+      if (Number.isFinite(noiseParams.gaussian_ksize)) {
+        formData.append("gaussian_ksize", String(noiseParams.gaussian_ksize));
+      }
+      if (Number.isFinite(noiseParams.gaussian_sigma)) {
+        formData.append("gaussian_sigma", String(noiseParams.gaussian_sigma));
+      }
+    }
+    if (method === "median") {
+      if (Number.isFinite(noiseParams.median_ksize)) {
+        formData.append("median_ksize", String(noiseParams.median_ksize));
+      }
+    }
 
     try {
       const response = await fetch("/process/noise-removal", {
@@ -180,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const runContrastEnhancement = async (method, noiseMethod) => {
+  const runContrastEnhancement = async (method, noiseMethod, noiseParams = {}) => {
     const filename = currentFilenameInput?.value;
     if (!filename || !method) {
       resetProcessedImage();
@@ -193,6 +294,19 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("method", method);
     if (noiseMethod) {
       formData.append("noise_method", noiseMethod);
+      if (noiseMethod === "gaussian") {
+        if (Number.isFinite(noiseParams.gaussian_ksize)) {
+          formData.append("gaussian_ksize", String(noiseParams.gaussian_ksize));
+        }
+        if (Number.isFinite(noiseParams.gaussian_sigma)) {
+          formData.append("gaussian_sigma", String(noiseParams.gaussian_sigma));
+        }
+      }
+      if (noiseMethod === "median") {
+        if (Number.isFinite(noiseParams.median_ksize)) {
+          formData.append("median_ksize", String(noiseParams.median_ksize));
+        }
+      }
     }
 
     try {
@@ -218,7 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const runSegmentation = async (method, noiseMethod, contrastMethod) => {
+  const runSegmentation = async (method, noiseMethod, contrastMethod, noiseParams = {}) => {
     const filename = currentFilenameInput?.value;
     if (!filename || !method) {
       resetProcessedImage();
@@ -231,6 +345,19 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("method", method);
     if (noiseMethod) formData.append("noise_method", noiseMethod);
     if (contrastMethod) formData.append("contrast_method", contrastMethod);
+    if (noiseMethod === "gaussian") {
+      if (Number.isFinite(noiseParams.gaussian_ksize)) {
+        formData.append("gaussian_ksize", String(noiseParams.gaussian_ksize));
+      }
+      if (Number.isFinite(noiseParams.gaussian_sigma)) {
+        formData.append("gaussian_sigma", String(noiseParams.gaussian_sigma));
+      }
+    }
+    if (noiseMethod === "median") {
+      if (Number.isFinite(noiseParams.median_ksize)) {
+        formData.append("median_ksize", String(noiseParams.median_ksize));
+      }
+    }
 
     try {
       const response = await fetch("/process/segmentation", {
@@ -258,20 +385,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const processImage = () => {
     const contrastMethod = getActiveContrastMethod();
     const noiseMethod = getActiveNoiseMethod();
+    const noiseParams = getNoiseParams();
     const segmentationMethod = getActiveSegmentationMethod();
 
     if (segmentationMethod) {
-      runSegmentation(segmentationMethod, noiseMethod, contrastMethod);
+      runSegmentation(segmentationMethod, noiseMethod, contrastMethod, noiseParams);
       return;
     }
 
     if (contrastMethod) {
-      runContrastEnhancement(contrastMethod, noiseMethod);
+      runContrastEnhancement(contrastMethod, noiseMethod, noiseParams);
       return;
     }
 
     if (noiseMethod) {
-      runNoiseRemoval(noiseMethod);
+      runNoiseRemoval(noiseMethod, noiseParams);
       return;
     }
 
@@ -284,6 +412,19 @@ document.addEventListener("DOMContentLoaded", () => {
       el.addEventListener("change", processImage);
     }
   });
+
+  [gaussianKernel, gaussianSigma].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("input", () => {
+      updateGaussianDisplay();
+    });
+  });
+
+  if (medianKernel) {
+    medianKernel.addEventListener("input", () => {
+      updateMedianDisplay();
+    });
+  }
 
   if (brightness) {
     brightness.addEventListener("input", (event) => {
@@ -298,6 +439,97 @@ document.addEventListener("DOMContentLoaded", () => {
   if (rawPreview?.src) {
     updateRawHistogram();
     updateProcessedHistogram(processedPreview?.src || rawPreview.src);
+  }
+
+  updateGaussianDisplay();
+  updateGaussianControlsState();
+  updateMedianDisplay();
+  updateMedianControlsState();
+  applyZoom();
+  const gaussianToggle = document.getElementById("gaussian");
+  if (gaussianToggle) {
+    gaussianToggle.addEventListener("change", updateGaussianControlsState);
+  }
+  const medianToggle = document.getElementById("median");
+  if (medianToggle) {
+    medianToggle.addEventListener("change", updateMedianControlsState);
+  }
+  if (applyNoiseBtn) {
+    applyNoiseBtn.addEventListener("click", processImage);
+  }
+
+  if (downloadProcessedBtn) {
+    downloadProcessedBtn.addEventListener("click", () => {
+      const src = processedPreview?.src || mainImage?.src;
+      if (!src) return;
+      const link = document.createElement("a");
+      link.href = src;
+      link.download = "processed_image.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
+
+  const clampZoom = (value) => Math.min(3, Math.max(0.5, value));
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", () => {
+      currentZoom = clampZoom(currentZoom + 0.1);
+      translateX = 0;
+      translateY = 0;
+      applyZoom();
+    });
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", () => {
+      currentZoom = clampZoom(currentZoom - 0.1);
+      translateX = 0;
+      translateY = 0;
+      applyZoom();
+    });
+  }
+
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener("click", () => {
+      currentZoom = 1.0;
+      translateX = 0;
+      translateY = 0;
+      applyZoom();
+    });
+  }
+
+  const updatePanFromCursor = (event) => {
+    if (!mainPanel || !zoomTargets.length || currentZoom <= 1.0) {
+      translateX = 0;
+      translateY = 0;
+      applyZoom();
+      return;
+    }
+    const panelRect = mainPanel.getBoundingClientRect();
+    const target = zoomTargets[0];
+    const imgRect = target.getBoundingClientRect();
+
+    const maxOffsetX = Math.max(0, (imgRect.width - panelRect.width) / 2);
+    const maxOffsetY = Math.max(0, (imgRect.height - panelRect.height) / 2);
+
+    const normX = clamp((event.clientX - panelRect.left) / panelRect.width, 0, 1);
+    const normY = clamp((event.clientY - panelRect.top) / panelRect.height, 0, 1);
+
+    translateX = clamp((0.5 - normX) * 2 * maxOffsetX, -maxOffsetX, maxOffsetX);
+    translateY = clamp((0.5 - normY) * 2 * maxOffsetY, -maxOffsetY, maxOffsetY);
+
+    applyZoom();
+  };
+
+  if (mainPanel) {
+    mainPanel.addEventListener("mousemove", updatePanFromCursor);
+    mainPanel.addEventListener("mouseleave", () => {
+      translateX = 0;
+      translateY = 0;
+      applyZoom();
+    });
   }
 
   const preventDefaults = (event) => {

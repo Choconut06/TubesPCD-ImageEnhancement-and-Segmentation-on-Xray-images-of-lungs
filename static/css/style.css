@@ -53,6 +53,7 @@ body {
   border-radius: 10px;
   height: 90vh;
   position: relative;
+  overflow: hidden;
 }
 
 .drop-area {
@@ -96,6 +97,14 @@ body {
   border: 1px solid var(--border);
   min-height: 220px;
   color: var(--muted);
+}
+
+.zoom-controls .btn-ghost {
+  min-width: 42px;
+}
+
+.zoom-controls-bar .btn-ghost {
+  min-width: 42px;
 }
 
 .preview-title {
