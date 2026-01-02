@@ -135,24 +135,40 @@
               <div class="section-card mb-4">
                 <h6 class="mb-1">Image Segmentation</h6>
                 <div class="divider"></div>
-                <div class="form-check form-switch">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="otsu"
-                    {%
-                    if
-                    not
-                    has_image
-                    %}disabled{%
-                    endif
-                    %}
-                  />
-                  <label class="form-check-label control-label" for="otsu"
-                    >Otsu Threshold</label
+                <div
+                  class="d-flex align-items-center justify-content-between gap-2"
+                >
+                  <label
+                    class="form-check-label control-label mb-0"
+                    for="otsu"
                   >
+                    Otsu Threshold
+                  </label>
+                  <div class="form-check form-switch m-0">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="otsu"
+                      {%
+                      if
+                      not
+                      has_image
+                      %}disabled{%
+                      endif
+                      %}
+                    />
+                  </div>
                 </div>
+                <input
+                  type="range"
+                  id="otsuThreshold"
+                  class="form-range range-thumb segmentation-range mt-2"
+                  min="0"
+                  max="255"
+                  value="128"
+                  disabled
+                />
               </div>
             </div>
           </div>
@@ -297,16 +313,35 @@
         const toggles = toggleIds
           .map((id) => document.getElementById(id))
           .filter(Boolean);
+        const otsuToggle = document.getElementById("otsu");
+        const otsuSlider = document.getElementById("otsuThreshold");
+
+        const updateOtsuSliderState = () => {
+          if (!otsuSlider || !otsuToggle) return;
+
+          const canUseSlider = !otsuToggle.disabled && otsuToggle.checked;
+          otsuSlider.disabled = !canUseSlider;
+          otsuSlider.classList.toggle("range-disabled", !canUseSlider);
+        };
 
         const resetControls = () => {
           if (brightness) brightness.value = 50;
           toggles.forEach((toggle) => {
             toggle.checked = false;
           });
+          if (otsuSlider) {
+            otsuSlider.value = 128;
+          }
+          updateOtsuSliderState();
         };
 
         if (resetButton) {
           resetButton.addEventListener("click", resetControls);
+        }
+
+        if (otsuToggle) {
+          otsuToggle.addEventListener("change", updateOtsuSliderState);
+          updateOtsuSliderState();
         }
 
         if (!dropArea || !fileInput || !uploadForm) return;
