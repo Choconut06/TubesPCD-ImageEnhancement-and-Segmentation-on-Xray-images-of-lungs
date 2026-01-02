@@ -31,7 +31,16 @@
               </div>
 
               <div class="section-card">
-                <h6 class="mb-1">Brightness</h6>
+                <div
+                  class="d-flex align-items-center justify-content-between mb-1"
+                >
+                  <h6 class="mb-0">Brightness</h6>
+                  <span
+                    id="brightnessValue"
+                    class="badge text-bg-light text-dark"
+                    >50%</span
+                  >
+                </div>
                 <div class="divider"></div>
                 <input
                   type="range"
@@ -138,10 +147,7 @@
                 <div
                   class="d-flex align-items-center justify-content-between gap-2"
                 >
-                  <label
-                    class="form-check-label control-label mb-0"
-                    for="otsu"
-                  >
+                  <label class="form-check-label control-label mb-0" for="otsu">
                     Otsu Threshold
                   </label>
                   <div class="form-check form-switch m-0">
@@ -216,16 +222,16 @@
             class="d-flex flex-column align-items-center justify-content-center h-100 gap-3"
           >
             {% if has_image %}
-            <div class="text-center">
-              <img
-                src="{{ image_path }}"
-                alt="Uploaded image"
-                class="uploaded-image img-fluid"
-              />
-              <div class="text-light small mt-2">
-                Drag &amp; drop another image or click below to replace
+              <div class="text-center">
+                <img
+                  src="{{ image_path }}"
+                  alt="Uploaded image"
+                  class="uploaded-image img-fluid brightness-target"
+                />
+                <div class="text-light small mt-2">
+                  Drag &amp; drop another image or click below to replace
+                </div>
               </div>
-            </div>
             {% endif %}
 
             <form
@@ -286,7 +292,7 @@
           <img
             src="{{ image_path }}"
             alt="Raw preview"
-            class="preview-image img-fluid"
+            class="preview-image raw-preview img-fluid"
           />
           {% endif %}
         </div>
@@ -296,7 +302,7 @@
           <img
             src="{{ image_path }}"
             alt="Processed preview"
-            class="preview-image img-fluid"
+            class="preview-image processed-preview brightness-target img-fluid"
           />
           {% endif %}
         </div>
@@ -309,12 +315,26 @@
         const uploadForm = document.getElementById("uploadForm");
         const resetButton = document.getElementById("resetControls");
         const brightness = document.getElementById("brightness");
+        const brightnessValue = document.getElementById("brightnessValue");
+        const brightnessTargets =
+          document.querySelectorAll(".brightness-target");
         const toggleIds = ["gaussian", "median", "histogram", "clahe", "otsu"];
         const toggles = toggleIds
           .map((id) => document.getElementById(id))
           .filter(Boolean);
         const otsuToggle = document.getElementById("otsu");
         const otsuSlider = document.getElementById("otsuThreshold");
+
+        const applyBrightness = (value) => {
+          const sliderValue = Math.max(0, Math.min(100, Number(value)));
+          const brightnessPercent = (sliderValue / 50) * 100; // 50 => normal (100%)
+          brightnessTargets.forEach((img) => {
+            img.style.filter = `brightness(${brightnessPercent}%)`;
+          });
+          if (brightnessValue) {
+            brightnessValue.textContent = `${Math.round(sliderValue)}%`;
+          }
+        };
 
         const updateOtsuSliderState = () => {
           if (!otsuSlider || !otsuToggle) return;
@@ -325,7 +345,10 @@
         };
 
         const resetControls = () => {
-          if (brightness) brightness.value = 50;
+          if (brightness) {
+            brightness.value = 50;
+            applyBrightness(50);
+          }
           toggles.forEach((toggle) => {
             toggle.checked = false;
           });
@@ -337,6 +360,13 @@
 
         if (resetButton) {
           resetButton.addEventListener("click", resetControls);
+        }
+
+        if (brightness) {
+          brightness.addEventListener("input", (event) => {
+            applyBrightness(event.target.value);
+          });
+          applyBrightness(brightness.value);
         }
 
         if (otsuToggle) {
